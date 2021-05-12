@@ -1,0 +1,38 @@
+name: CI (pip)
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.7, pypy2, 3.5, 3.6, 3.7, 3.8, 3.9, pypy3]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install ".[lint,test]"
+
+      - name: Lint code
+        # NB. checking docstrings causes lots of errors,
+        # do it separately so it doesn’t cause failes.
+        run: flake8 legipy --ignore=D
+
+      - name: Lint docstrings
+        continue-on-error: true
+        run: flake8 --select D
+
+      - name: Run tests
+        run: pytest
+
+      - name: Update results to codecov
+        run: bash <(curl -s https://codecov.io/bash)

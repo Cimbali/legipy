@@ -3,6 +3,7 @@
 from datetime import date
 
 import vcr
+import pytest
 
 from legipy.services.law_service import LawService
 
@@ -119,6 +120,7 @@ def test_pending_law_project():
     assert law.title == u'Projet de loi ratifiant l’ordonnance n° 2011-1923 du 22 décembre 2011 relative à l\'évolution de la sécurité sociale à Mayotte dans le cadre de la départementalisation'
 
 
+@pytest.mark.skip(reason='No way of currently obtaining/identifying common laws')
 @recorder.use_cassette()
 def test_list_common_law_projects():
     service = LawService()
