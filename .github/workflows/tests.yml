@@ -26,12 +26,12 @@ jobs:
         # NB. checking docstrings causes lots of errors,
         # do it separately so it doesn’t cause failes.
         run: |
-          flake8 legipy --ignore=D  | sed -r 's/^(\S+):([0-9]+):([0-9]+): /::error file=\1,line=\2,col=\3::/'
+          flake8 legipy --ignore=D | sed -r 'h;s/^(\S+):([0-9]+):([0-9]+): /::error file=\1,line=\2,col=\3::/p;g'
 
       - name: Lint docstrings
         continue-on-error: true
         run: |
-          flake8 --select D  | sed -r 's/^(\S+):([0-9]+):([0-9]+): /::warning file=\1,line=\2,col=\3::/'
+          flake8 --select D  | sed -r 'h;s/^(\S+):([0-9]+):([0-9]+): /::warning file=\1,line=\2,col=\3::/p;g'
 
       - name: Run tests
         run: pytest
