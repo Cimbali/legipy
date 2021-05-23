@@ -11,11 +11,13 @@ import requests_cache
 
 
 from legipy.models.base import LegipyModel
+from legipy.services import Service
 from legipy.services.code_service import CodeService
 from legipy.services.code_service import SectionService
 from legipy.services.law_service import LawService
 from legipy.services.legislature_service import LegislatureService
 from legipy.services.session import Session
+from legipy.services.selenium import Browser
 
 
 def json_serial(obj):
@@ -56,19 +58,24 @@ def _dump_items(ary):
 @click.option('-c', '--cookie-jar', help='Save cookies in Netscape format',
               type=click.Path(dir_okay=False, writable=True, allow_dash=True))
 @click.option('-A', '--user-agent', type=str, help='Specify user agent')
-def cli(cache, headers, cookies, user_agent, cookie_jar):
+@click.option('-s', '--session', is_flag=True, help='Use requests.sessions')
+@click.option('-w', '--webdriver', is_flag=True, help='Use selenium webdriver')
+def cli(cache, headers, cookies, user_agent, cookie_jar, session, webdriver):
     if cache:
         requests_cache.install_cache('legipy_cache')
 
-    session = Session()
-    if headers:
-        session.set_headers(headers)
-    if user_agent is not None:
-        session.set_user_agent(user_agent)
-    if cookie_jar is not None:
-        session.save_cookie_jar(cookie_jar)
-    if cookies is not None:
-        session.set_cookies(cookies)
+    if session:
+        Service.backend = session = Session()
+        if headers:
+            session.set_headers(headers)
+        if user_agent is not None:
+            session.set_user_agent(user_agent)
+        if cookie_jar is not None:
+            session.save_cookie_jar(cookie_jar)
+        if cookies is not None:
+            session.set_cookies(cookies)
+    elif webdriver:
+        Service.backend = Browser()
 
 
 @cli.command(short_help=u"List published laws")
