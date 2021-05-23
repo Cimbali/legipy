@@ -6,16 +6,17 @@ import six
 from legipy.common import page_url
 from legipy.parsers.legislature_list_parser import parse_legislature_list
 from legipy.services import Singleton
+from legipy.services.session import SessionService
 
 
 @six.add_metaclass(Singleton)
-class LegislatureService(object):
+class LegislatureService(SessionService):
     url = page_url('liste/legislatures')
     cache = None
 
     def legislatures(self):
         if self.cache is None:
-            response = requests.get(self.url)
+            response = self.get(self.url)
             self.cache = parse_legislature_list(response.url, response.content)
 
         return self.cache

@@ -15,6 +15,7 @@ from legipy.services.code_service import CodeService
 from legipy.services.code_service import SectionService
 from legipy.services.law_service import LawService
 from legipy.services.legislature_service import LegislatureService
+from legipy.services.session import Session
 
 
 def json_serial(obj):
@@ -46,10 +47,28 @@ def _dump_items(ary):
 
 
 @click.group(short_help=u"Client for the `legifrance.gouv.fr` website.")
-@click.option('--cache/--no-cache', default=False)
-def cli(cache):
+@click.option('--cache/--no-cache', default=False,
+              help='Cache requests locally')
+@click.option('-H', '--header', 'headers', multiple=True, type=str,
+              help='HTTP Header, option can be passed multiple times')
+@click.option('-b', '--cookie', 'cookies', type=str,
+              help='Cookies as "NAME1=VALUE1; NAME2=VALUE2", or filename')
+@click.option('-c', '--cookie-jar', help='Save cookies in Netscape format',
+              type=click.Path(dir_okay=False, writable=True, allow_dash=True))
+@click.option('-A', '--user-agent', type=str, help='Specify user agent')
+def cli(cache, headers, cookies, user_agent, cookie_jar):
     if cache:
         requests_cache.install_cache('legipy_cache')
+
+    session = Session()
+    if headers:
+        session.set_headers(headers)
+    if user_agent is not None:
+        session.set_user_agent(user_agent)
+    if cookie_jar is not None:
+        session.save_cookie_jar(cookie_jar)
+    if cookies is not None:
+        session.set_cookies(cookies)
 
 
 @cli.command(short_help=u"List published laws")
