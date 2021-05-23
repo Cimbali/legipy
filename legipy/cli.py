@@ -26,11 +26,6 @@ def json_serial(obj):
     raise TypeError("Type {0} not serializable".format(repr(type(obj))))
 
 
-def current_legislature():
-    cur = [leg for leg in LegislatureService.legislatures() if leg.end is None]
-    return cur[0].number
-
-
 def _dump_item(obj, error=None):
     if obj:
         print(json.dumps(obj, sort_keys=True, indent=2, default=json_serial))
@@ -58,23 +53,26 @@ def cli(cache):
 
 
 @cli.command(short_help=u"List published laws")
-@click.option('--legislature', default=current_legislature(),
-              help='Legislature number')
+@click.option('--legislature', default=None, help='Legislature number')
 def published_laws(legislature):
+    if legislature is None:
+        legislature = LegislatureService().current_legislature()
     _dump_items(LawService().published_laws(legislature))
 
 
 @cli.command(short_help=u"List pending law projects")
-@click.option('--legislature', default=current_legislature(),
-              help='Legislature number')
+@click.option('--legislature', default=None, help='Legislature number')
 def law_projects(legislature):
+    if legislature is None:
+        legislature = LegislatureService().current_legislature()
     _dump_items(LawService().pending_laws(legislature, True))
 
 
 @cli.command(short_help=u"List pending law proposals")
-@click.option('--legislature', default=current_legislature(),
-              help='Legislature number')
+@click.option('--legislature', default=None, help='Legislature number')
 def law_proposals(legislature):
+    if legislature is None:
+        legislature = LegislatureService().current_legislature()
     _dump_items(LawService().pending_laws(legislature, False))
 
 

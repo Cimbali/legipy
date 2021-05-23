@@ -13,10 +13,15 @@ class LegislatureService(object):
     url = page_url('liste/legislatures')
     cache = None
 
-    @classmethod
-    def legislatures(cls):
-        if cls.cache is None:
-            response = requests.get(cls.url)
-            cls.cache = parse_legislature_list(response.url, response.content)
+    def legislatures(self):
+        if self.cache is None:
+            response = requests.get(self.url)
+            self.cache = parse_legislature_list(response.url, response.content)
 
-        return cls.cache
+        return self.cache
+
+    def current_legislature(self):
+        for leg in self.legislatures():
+            if leg.end is None:
+                return leg
+        raise ValueError('No current legislature')
