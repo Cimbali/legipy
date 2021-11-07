@@ -16,26 +16,24 @@ class LawService(Service):
     comm_url = None
 
     def pending_laws(self, legislature, government=True):
-        response = self.get(
+        url, soup = self.get(
             self.pub_url.format(legislature=legislature),
             params={'type': 'PROJET_LOI' if government else 'PROPOSITION_LOI'}
         )
-        return parse_pending_law_list(response.url, response.content,
-                                      legislature=legislature)
+        return parse_pending_law_list(url, soup, legislature=legislature)
 
     def published_laws(self, legislature):
-        response = self.get(
+        url, soup = self.get(
             self.pub_url.format(legislature=legislature),
             params={'type': 'LOI_PUBLIEE'}
         )
-        return parse_published_law_list(response.url, response.content,
-                                        legislature=legislature)
+        return parse_published_law_list(url, soup, legislature=legislature)
 
     def common_laws(self):
         raise NotImplementedError('Common laws not updated to 2020 format')
 
     def get_law(self, id_legi):
-        response = self.get(
+        url, soup = self.get(
             self.law_url.format(id_legi=id_legi)
         )
-        return parse_law(response.url, response.content, id_legi)
+        return parse_law(url, soup, id_legi)

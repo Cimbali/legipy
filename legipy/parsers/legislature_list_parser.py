@@ -3,15 +3,12 @@ from __future__ import unicode_literals
 
 import re
 
-from bs4 import BeautifulSoup
-
 from legipy.common import parse_date
 from legipy.common import parse_roman
 from legipy.models.legislature import Legislature
 
 
-def parse_legislature_list(url, html):
-    soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+def parse_legislature_list(url, soup):
     results = []
 
     for leg_header in soup.find_all('h2'):

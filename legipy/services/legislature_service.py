@@ -15,13 +15,8 @@ class LegislatureService(Service):
 
     def legislatures(self):
         if self.cache is None:
-            response = self.get(self.url)
-            print(response.url, response.status_code, response.history)
-            print(response.request.headers)
-            print(response.headers)
-            print(response.cookies)
-            print(response.text)
-            self.cache = parse_legislature_list(response.url, response.content)
+            url, soup = self.get(self.url)
+            self.cache = parse_legislature_list(url, soup)
 
         return self.cache
 

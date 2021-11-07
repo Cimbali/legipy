@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import re
 
-from bs4 import BeautifulSoup
 from six.moves.urllib.parse import urljoin, urldefrag
 
 from legipy.common import find_all_non_nested
@@ -43,28 +42,25 @@ class CodeParser(object):
         return self._section_service
 
     @classmethod
-    def parse_code_list(cls, url, html):
-        soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+    def parse_code_list(cls, url, soup):
         codes = [code.find('a') for code in soup.find_all('h2')]
         return [Code(re.sub('^id', '', code.attrs['id']),
                      code.get_text().strip(),
                      url_code=urljoin(url, code.attrs['href']))
                 for code in codes if code is not None]
 
-    def parse_code(self, url, html):
+    def parse_code(self, url, soup):
         """
         Parse the code details and TOC from the given HTML content
 
         :type  url: str
         :param url: source URL of the page
 
-        :type  html: unicode
-        :param html: Content of the HTML
+        :type  soup: bs4.Beautifulsoup
+        :param soup: Content of the HTML
 
         :return: the code
         """
-        soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
-
         code = Code(self.id_code,
                     date_pub=self.date_pub,
                     url_code=cleanup_url(url))
@@ -125,8 +121,7 @@ class CodeParser(object):
         return section
 
 
-def parser_articles(url, html):
-    soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+def parser_articles(url, soup):
     articles = []
     for article in soup.find_all('article'):
         # Articles abrogés en h3

@@ -5,6 +5,7 @@ from __future__ import print_function
 import datetime
 import json
 import sys
+import os
 
 import click
 import requests_cache
@@ -58,14 +59,21 @@ def _dump_items(ary):
 @click.option('-c', '--cookie-jar', help='Save cookies in Netscape format',
               type=click.Path(dir_okay=False, writable=True, allow_dash=True))
 @click.option('-A', '--user-agent', type=str, help='Specify user agent')
-@click.option('-s', '--session', is_flag=True, help='Use requests.sessions')
-@click.option('-w', '--webdriver', is_flag=True, help='Use selenium webdriver')
-def cli(cache, headers, cookies, user_agent, cookie_jar, session, webdriver):
+@click.option('-w/-W', '--webdriver/--no-webdriver', default=Browser.check_running(),
+              help='Use selenium webdriver')
+@click.help_option('-h')
+@click.pass_context
+def cli(context, cache, headers, cookies, user_agent, cookie_jar, webdriver):
     if cache:
         requests_cache.install_cache('legipy_cache')
 
-    if session:
-        Service.backend = session = Session()
+    if 'daemon' in context.invoked_subcommand.split('-'):
+        return
+
+    if webdriver:
+        Service.backend = Browser()
+    else:
+        session = Session()
         if headers:
             session.set_headers(headers)
         if user_agent is not None:
@@ -74,8 +82,23 @@ def cli(cache, headers, cookies, user_agent, cookie_jar, session, webdriver):
             session.save_cookie_jar(cookie_jar)
         if cookies is not None:
             session.set_cookies(cookies)
-    elif webdriver:
-        Service.backend = Browser()
+        Service.backend = session
+
+
+@cli.command()
+def start_daemon():
+    if Browser.check_running():
+        Browser.stop_running()
+    # Create a webdriver, fork and kill the parent, wait for commands
+    browser = Browser()
+    if os.fork():
+        os._exit(0)
+    browser.daemon()
+
+
+@cli.command()
+def stop_daemon():
+    Browser.stop_running()
 
 
 @cli.command(short_help=u"List published laws")

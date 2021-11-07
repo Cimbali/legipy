@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import re
 
-from bs4 import BeautifulSoup
 from six.moves.urllib.parse import urljoin
 from six.moves.urllib.parse import urlparse
 
@@ -13,8 +12,7 @@ from legipy.common import LAW_KINDS
 from legipy.models.law import Law
 
 
-def parse_pending_law_list(url, html, **law_kwargs):
-    soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+def parse_pending_law_list(url, soup, **law_kwargs):
     results = []
 
     for year_header in soup.find_all('h2'):

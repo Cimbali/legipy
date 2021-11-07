@@ -3,8 +3,6 @@ from __future__ import unicode_literals
 
 import re
 
-from bs4 import BeautifulSoup
-
 from six.moves.urllib.parse import urljoin
 
 from legipy.common import cleanup_url
@@ -13,8 +11,7 @@ from legipy.common import parse_date
 from legipy.models.law import Law
 
 
-def parse_published_law_list(url, html, **law_args):
-    soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+def parse_published_law_list(url, soup, **law_args):
     results = []
 
     for year_header in soup.find_all('h2'):

@@ -3,8 +3,6 @@ from __future__ import unicode_literals
 
 import re
 
-from bs4 import BeautifulSoup
-
 from legipy.common import LAW_KINDS
 from legipy.common import cleanup_url
 from legipy.common import merge_spaces
@@ -12,8 +10,7 @@ from legipy.common import parse_date
 from legipy.models.law import Law
 
 
-def parse_law(url, html, id_legi):
-    soup = BeautifulSoup(html, 'html5lib', from_encoding='utf-8')
+def parse_law(url, soup, id_legi):
     law = Law(
         url_legi=cleanup_url(url),
         id_legi=id_legi
@@ -56,7 +53,7 @@ def parse_law(url, html, id_legi):
     dos_senat = soup.find('a', href=senat_url_re)
     if dos_senat:
         law.url_senat = dos_senat['href'].split('#')[0]
-        law.id_senat = re.search(r'([^/]+)\.html$', law.url_senat).group(1)
+        law.id_senat = re.search(r'([^/]+)\.soup$', law.url_senat).group(1)
 
     dos_an = soup.find('a', href=re.compile(r'/dossiers/'))
 
