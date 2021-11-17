@@ -8,11 +8,13 @@ import json
 import errno
 import signal
 import atexit
+import appdirs
 import urllib3
 import requests
 import threading
 import http.cookiejar
-import collections.abc
+from collections.abc import Iterable
+from pathlib import Path
 
 from legipy.services import Singleton
 
@@ -51,8 +53,7 @@ class Browser(object):
         'chrome': webdriver.chrome.options.Options,
     }
 
-    path = os.path.join(os.getenv('LOCALAPPDATA') if os.name == 'nt'
-                        else f'/run/user/{os.getuid()}', 'selenium.json')
+    path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens')) / 'selenium.json'
 
     def __init__(self, driver_name='firefox'):
         session_data = None
@@ -75,9 +76,11 @@ class Browser(object):
             self.driver = self.browser_map[driver_name]()
             atexit.register(self.driver.quit)
 
-
     def background(self):
         """ Background work: save infos for remote to file and wait until clean up """
+        if not self.path.parent.exists():
+            self.path.parent.mkdir(parents=True)
+
         with open(self.path, 'w') as f:
             json.dump({
                 'pid': os.getpid(),
@@ -93,7 +96,6 @@ class Browser(object):
             exit.wait(60)
 
         os.unlink(self.path)
-
 
     @classmethod
     def signal_daemon(cls, sig):
@@ -115,11 +117,9 @@ class Browser(object):
             os.unlink(cls.path)
         return False
 
-
     @classmethod
     def stop_running(cls):
         cls.signal_daemon(signal.SIGINT)
-
 
     @classmethod
     def check_running(cls):
@@ -144,7 +144,7 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
             raise ValueError('WebdriverAdapter adapter only supports get requests')
 
         if timeout:
-            timeout = sum(timeout) if isinstance(timeout, collections.abc.Iterable) else timeout
+            timeout = sum(timeout) if isinstance(timeout, Iterable) else timeout
             self.driver.set_page_load_timeout(timeout)
 
         self.driver.get(request.url)

@@ -1,9 +1,11 @@
 # coding: utf-8
 
 import sys
+import appdirs
 import requests
 import requests_cache
 from bs4 import BeautifulSoup
+from pathlib import Path
 
 class Singleton(type):
     _instances = {}
@@ -21,10 +23,17 @@ class Service(object):
     retries = 10
 
     @classmethod
-    def add_cache(cls, *args, **kwargs):
+    def add_cache(cls, **kwargs):
         adapter = cls.session.adapters.get(cls.domain)
         # WebdriverAdapter sets None as HTTP Code
-        cls.session = requests_cache.CachedSession(*args, **kwargs, allowable_codes=(200, None,))
+        if kwargs.get('backend', 'sqlite') == 'sqlite':
+            path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens'))
+            if not path.exists():
+                path.mkdir(parents=True)
+            cache_name = str(path / 'requests_cache.sqlite')
+        else:
+            cache_name = 'legipy_requests'
+        cls.session = requests_cache.CachedSession(**kwargs, cache_name=cache_name, allowable_codes=(200, None,))
         if adapter:
             cls.set_adapter(adapter)
 
@@ -38,7 +47,6 @@ class Service(object):
             soup = BeautifulSoup(response.content, 'html5lib', from_encoding='utf-8')
             # If error or valid contents, return the resposne
             if response.status_code != 200 or len(soup.body.contents) > 1:
-                print(Service.session.cache.urls, file=sys.stderr)
                 return response.url, soup
 
             if hasattr(Service.session, 'cache'):

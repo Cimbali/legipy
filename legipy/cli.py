@@ -51,18 +51,18 @@ def _dump_items(ary):
               help='Cache requests locally')
 @click.option('-w/-W', '--webdriver/--no-webdriver', default=Browser.check_running(),
               help='Use selenium webdriver')
+@click.option('--driver', default='firefox', 'Browser to control with webdriver (firefox or chrome')
 @click.help_option('-h')
 @click.pass_context
-def cli(context, cache, webdriver):
+def cli(context, cache, webdriver, driver):
     if 'daemon' in context.invoked_subcommand.split('-'):
         return
 
     if cache:
-        Service.add_cache('legipy_cache')
+        Service.add_cache()
 
     if webdriver:
-        # How should we allow options such as chrome or headless?
-        Service.set_adapter(WebdriverAdapter())
+        Service.set_adapter(WebdriverAdapter(driver))
 
 
 @cli.command()
