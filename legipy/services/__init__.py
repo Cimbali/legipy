@@ -15,11 +15,11 @@ class Singleton(type):
 
 
 class Service(object):
-    backend = requests
+    session = requests
     retries = 10
     def get(self, *args, **kwargs):
         for _ in range(self.retries):
-            response = self.backend.get(*args, **kwargs)
+            response = Service.session.get(*args, **kwargs)
             soup = BeautifulSoup(response.content, 'html5lib', from_encoding='utf-8')
             # If error or valid contents, return the resposne
             if response.status_code != 200 or len(soup.body.contents) > 1:

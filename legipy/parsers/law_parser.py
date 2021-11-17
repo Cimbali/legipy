@@ -53,7 +53,7 @@ def parse_law(url, soup, id_legi):
     dos_senat = soup.find('a', href=senat_url_re)
     if dos_senat:
         law.url_senat = dos_senat['href'].split('#')[0]
-        law.id_senat = re.search(r'([^/]+)\.soup$', law.url_senat).group(1)
+        law.id_senat = re.search(r'([^/]+)\.html$', law.url_senat).group(1)
 
     dos_an = soup.find('a', href=re.compile(r'/dossiers/'))
 

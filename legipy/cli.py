@@ -8,6 +8,7 @@ import sys
 import os
 
 import click
+import requests
 import requests_cache
 
 
@@ -17,8 +18,8 @@ from legipy.services.code_service import CodeService
 from legipy.services.code_service import SectionService
 from legipy.services.law_service import LawService
 from legipy.services.legislature_service import LegislatureService
-from legipy.services.session import Session
-from legipy.services.selenium import Browser
+from legipy.services.session import set_headers, set_user_agent, set_cookies, save_cookie_jar
+from legipy.services.selenium import Browser, WebdriverAdapter
 
 
 def json_serial(obj):
@@ -59,30 +60,30 @@ def _dump_items(ary):
 @click.option('-c', '--cookie-jar', help='Save cookies in Netscape format',
               type=click.Path(dir_okay=False, writable=True, allow_dash=True))
 @click.option('-A', '--user-agent', type=str, help='Specify user agent')
+@click.option('-s', '--session', is_flag=True, help='Use requests.sessions')
 @click.option('-w/-W', '--webdriver/--no-webdriver', default=Browser.check_running(),
               help='Use selenium webdriver')
 @click.help_option('-h')
 @click.pass_context
-def cli(context, cache, headers, cookies, user_agent, cookie_jar, webdriver):
-    if cache:
-        requests_cache.install_cache('legipy_cache')
-
+def cli(context, cache, headers, cookies, user_agent, cookie_jar, session, webdriver):
     if 'daemon' in context.invoked_subcommand.split('-'):
         return
 
+    if cache:
+        requests_cache.install_cache('legipy_cache')
+
+    session = requests.Session()
     if webdriver:
-        Service.backend = Browser()
-    else:
-        session = Session()
-        if headers:
-            session.set_headers(headers)
-        if user_agent is not None:
-            session.set_user_agent(user_agent)
-        if cookie_jar is not None:
-            session.save_cookie_jar(cookie_jar)
-        if cookies is not None:
-            session.set_cookies(cookies)
-        Service.backend = session
+        session.mount('https://www.legifrance.gouv.fr/', WebdriverAdapter())
+    if headers:
+        set_headers(session, headers)
+    if user_agent is not None:
+        set_user_agent(session, user_agent)
+    if cookie_jar is not None:
+        atexit.register(save_cookie_jar, session, cookie_jar)
+    if cookies is not None:
+        set_cookies(session, cookies)
+    Service.session = session
 
 
 @cli.command()
@@ -93,7 +94,7 @@ def start_daemon():
     browser = Browser()
     if os.fork():
         os._exit(0)
-    browser.daemon()
+    browser.to_background()
 
 
 @cli.command()

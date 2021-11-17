@@ -12,6 +12,7 @@ import urllib3
 import requests
 import threading
 import http.cookiejar
+import collections.abc
 
 from legipy.services import Singleton
 
@@ -39,28 +40,18 @@ class RemoteDaemon(webdriver.Remote):
         super(RemoteDaemon, self).quit()
 
 
-class Firefox(webdriver.Firefox):
-    def __init__(self, *args, **kwargs):
-        super(Firefox, self).__init__(*args, **kwargs)
-
-
-class Chrome(webdriver.Chrome):
-    def __init__(self, *args, **kwargs):
-        super(Chrome, self).__init__(*args, **kwargs)
-
-
-@six.add_metaclass(Singleton)
 class Browser(object):
+    """ Class wrapping and handling the lifetime of a WebDriver """
     browser_map = {
-        'firefox': Firefox,
-        'chrome': Chrome,
+        'firefox': webdriver.Firefox,
+        'chrome': webdriver.Chrome,
     }
 
     options_map = {
         'firefox': webdriver.firefox.options.Options,
         'chrome': webdriver.chrome.options.Options,
     }
-    # browsers that support setting headless
+
     path = f'/run/user/{os.getuid()}/selenium.json'
 
     def __init__(self, driver_name='firefox'):
@@ -87,55 +78,7 @@ class Browser(object):
             atexit.register(self.driver.quit)
 
 
-    @staticmethod
-    def to_cookielib_cookie(selenium_cookie):
-        """ https://gist.github.com/tubaman/ab4fdc3e0104a0f54046 """
-        return http.cookiejar.Cookie(
-            version=0,
-            name=selenium_cookie['name'],
-            value=selenium_cookie['value'],
-            port='80',
-            port_specified=False,
-            domain=selenium_cookie['domain'],
-            domain_specified=True,
-            domain_initial_dot=False,
-            path=selenium_cookie['path'],
-            path_specified=True,
-            secure=selenium_cookie['secure'],
-            expires=selenium_cookie.get('expiry'),
-            discard=False,
-            comment=None,
-            comment_url=None,
-            rest=None,
-            rfc2109=False
-        )
-
-
-    def get(self, url, *args, **kwargs):
-        self.driver.get(url, *args, **kwargs)
-
-        response = requests.models.Response()
-        response.request = requests.models.Request(method='GET', url=url)
-        response.url = url
-
-        # Things we can’t have :( unless a proxy which may gets us detected or some add-on like logging
-        response.status_code = None
-        response.reason = None
-
-        # Miraculously cookies are available
-        jar = requests.cookies.RequestsCookieJar()
-        for cookie in self.driver.get_cookies():
-            jar.set_cookie(self.to_cookielib_cookie(cookie))
-        response.cookies = jar
-
-        # Set data with default encoding
-        response.encoding = 'utf-8'
-        response.raw = io.BytesIO(self.driver.page_source.encode(response.encoding))
-
-        return response
-
-
-    def daemon(self):
+    def to_background(self):
         with open(self.path, 'w') as f:
             json.dump({
                 'pid': os.getpid(),
@@ -182,3 +125,81 @@ class Browser(object):
     @classmethod
     def check_running(cls):
         return cls.signal_daemon(0)
+
+
+class WebdriverAdapter(requests.adapters.BaseAdapter):
+    """ Send get requests via the Browser’s """
+    def __init__(self):
+        super(WebdriverAdapter, self).__init__()
+        self.browser = Browser()
+        self.driver = self.browser.driver
+
+    def close(self):
+        pass
+
+    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
+        """ Sends PreparedRequest object. Returns Response object.
+
+        Args:
+            request (:class:`PreparedRequest <PreparedRequest>`): the request being sent.
+            stream (bool): (optional) Whether to stream the request content.
+            timeout (float or tuple): (optional) How long to wait for the server to send
+                                      data before giving up, as a float, or a :ref:`(connect timeout,
+                                      read timeout) <timeouts>` tuple.
+            verify (bool): (optional) Either a boolean, in which case it controls whether we verify
+                           the server's TLS certificate, or a string, in which case it must be a path
+                           to a CA bundle to use
+            cert: (optional) Any user-provided SSL certificate to be trusted.
+            proxies: (optional) The proxies dictionary to apply to the request.
+        """
+        if request.method.upper() != 'GET':
+            raise ValueError('WebdriverAdapter adapter only supports get requests')
+
+        if timeout:
+            timeout = sum(timeout) if isinstance(timeout, collections.abc.Iterable) else timeout
+            self.driver.set_page_load_timeout(timeout)
+
+        self.driver.get(request.url)
+        response = requests.models.Response()
+        response.request = request
+        response.url = self.driver.current_url
+
+        # Things we can’t have :( unless we use a proxy which may gets us detected or some logging-like add-on
+        response.status_code = None
+        response.reason = None
+
+        # Miraculously cookies are available
+        jar = requests.cookies.RequestsCookieJar()
+        for cookie in self.driver.get_cookies():
+            jar.set_cookie(self.to_cookielib_cookie(cookie))
+        response.cookies = jar
+
+        # Set data with default encoding as 'raw'
+        response.encoding = 'utf-8'
+        response.raw = io.BytesIO(self.driver.page_source.encode(response.encoding))
+
+        return response
+
+
+    @staticmethod
+    def to_cookielib_cookie(selenium_cookie):
+        """ https://gist.github.com/tubaman/ab4fdc3e0104a0f54046 """
+        return http.cookiejar.Cookie(
+            version=0,
+            name=selenium_cookie['name'],
+            value=selenium_cookie['value'],
+            port='80',
+            port_specified=False,
+            domain=selenium_cookie['domain'],
+            domain_specified=True,
+            domain_initial_dot=False,
+            path=selenium_cookie['path'],
+            path_specified=True,
+            secure=selenium_cookie['secure'],
+            expires=selenium_cookie.get('expiry'),
+            discard=False,
+            comment=None,
+            comment_url=None,
+            rest=None,
+            rfc2109=False
+        )
