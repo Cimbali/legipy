@@ -8,9 +8,6 @@ import sys
 import os
 
 import click
-import requests
-import requests_cache
-
 
 from legipy.models.base import LegipyModel
 from legipy.services import Service
@@ -18,7 +15,6 @@ from legipy.services.code_service import CodeService
 from legipy.services.code_service import SectionService
 from legipy.services.law_service import LawService
 from legipy.services.legislature_service import LegislatureService
-from legipy.services.session import set_headers, set_user_agent, set_cookies, save_cookie_jar
 from legipy.services.selenium import Browser, WebdriverAdapter
 
 
@@ -51,55 +47,44 @@ def _dump_items(ary):
 
 
 @click.group(short_help=u"Client for the `legifrance.gouv.fr` website.")
-@click.option('--cache/--no-cache', default=False,
+@click.option('-c/-C', '--cache/--no-cache', default=True,
               help='Cache requests locally')
-@click.option('-H', '--header', 'headers', multiple=True, type=str,
-              help='HTTP Header, option can be passed multiple times')
-@click.option('-b', '--cookie', 'cookies', type=str,
-              help='Cookies as "NAME1=VALUE1; NAME2=VALUE2", or filename')
-@click.option('-c', '--cookie-jar', help='Save cookies in Netscape format',
-              type=click.Path(dir_okay=False, writable=True, allow_dash=True))
-@click.option('-A', '--user-agent', type=str, help='Specify user agent')
-@click.option('-s', '--session', is_flag=True, help='Use requests.sessions')
 @click.option('-w/-W', '--webdriver/--no-webdriver', default=Browser.check_running(),
               help='Use selenium webdriver')
 @click.help_option('-h')
 @click.pass_context
-def cli(context, cache, headers, cookies, user_agent, cookie_jar, session, webdriver):
+def cli(context, cache, webdriver):
     if 'daemon' in context.invoked_subcommand.split('-'):
         return
 
     if cache:
-        requests_cache.install_cache('legipy_cache')
+        Service.add_cache('legipy_cache')
 
-    session = requests.Session()
     if webdriver:
-        session.mount('https://www.legifrance.gouv.fr/', WebdriverAdapter())
-    if headers:
-        set_headers(session, headers)
-    if user_agent is not None:
-        set_user_agent(session, user_agent)
-    if cookie_jar is not None:
-        atexit.register(save_cookie_jar, session, cookie_jar)
-    if cookies is not None:
-        set_cookies(session, cookies)
-    Service.session = session
+        # How should we allow options such as chrome or headless?
+        Service.set_adapter(WebdriverAdapter())
 
 
 @cli.command()
 def start_daemon():
     if Browser.check_running():
         Browser.stop_running()
-    # Create a webdriver, fork and kill the parent, wait for commands
     browser = Browser()
     if os.fork():
         os._exit(0)
-    browser.to_background()
+    browser.background()
 
 
 @cli.command()
 def stop_daemon():
     Browser.stop_running()
+
+
+@cli.command()
+def daemon():
+    if Browser.check_running():
+        Browser.stop_running()
+    Browser().background()
 
 
 @cli.command(short_help=u"List published laws")

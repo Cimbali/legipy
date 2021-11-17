@@ -21,23 +21,22 @@ from selenium.webdriver.remote.command import Command
 
 
 class RemoteDaemon(webdriver.Remote):
+    """ Communicate with a running instance of a browser
+
+    Useful to decrease browser startup & shutdown overheads, to fill in captchas,
+    and to persist sessions. Requires bypassing session start and stop mechanisms
+    """
     def __init__(self, session_data, **kwargs):
         self.session_data = session_data
-        super(RemoteDaemon, self).__init__(command_executor=self.session_data['url'], **kwargs)
+        super(RemoteDaemon, self).__init__(command_executor=session_data['url'], **kwargs)
 
     def start_session(self, *args, **kwargs):
-        if self.session_data is not None:
-            self.session_id = self.session_data['session_id']
-            self.w3c = self.command_executor.w3c = self.session_data['w3c']
-            self.capabilities = self.session_data['capabilities']
-        else:
-            super(RemoteDaemon, self).start_session(*args, **kwargs)
+        self.session_id = self.session_data['session_id']
+        self.w3c = self.command_executor.w3c = self.session_data['w3c']
+        self.capabilities = self.session_data['capabilities']
 
     def quit(self):
         pass
-
-    def real_quit(self):
-        super(RemoteDaemon, self).quit()
 
 
 class Browser(object):
@@ -52,11 +51,10 @@ class Browser(object):
         'chrome': webdriver.chrome.options.Options,
     }
 
-    path = f'/run/user/{os.getuid()}/selenium.json'
+    path = os.path.join(os.getenv('LOCALAPPDATA') if os.name == 'nt'
+                        else f'/run/user/{os.getuid()}', 'selenium.json')
 
     def __init__(self, driver_name='firefox'):
-        """ Main function: starts the selenium driver, gets the element, and saves the screenshot.
-        """
         session_data = None
         if os.path.exists(self.path):
             with open(self.path) as f:
@@ -78,7 +76,8 @@ class Browser(object):
             atexit.register(self.driver.quit)
 
 
-    def to_background(self):
+    def background(self):
+        """ Background work: save infos for remote to file and wait until clean up """
         with open(self.path, 'w') as f:
             json.dump({
                 'pid': os.getpid(),
@@ -129,29 +128,18 @@ class Browser(object):
 
 class WebdriverAdapter(requests.adapters.BaseAdapter):
     """ Send get requests via the Browser’s """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(WebdriverAdapter, self).__init__()
-        self.browser = Browser()
+        self.browser = Browser(*args, **kwargs)
         self.driver = self.browser.driver
 
     def close(self):
         pass
 
     def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
-        """ Sends PreparedRequest object. Returns Response object.
+        """ Sends a PreparedRequest via the webdriver. Returns Response object.
 
-        Args:
-            request (:class:`PreparedRequest <PreparedRequest>`): the request being sent.
-            stream (bool): (optional) Whether to stream the request content.
-            timeout (float or tuple): (optional) How long to wait for the server to send
-                                      data before giving up, as a float, or a :ref:`(connect timeout,
-                                      read timeout) <timeouts>` tuple.
-            verify (bool): (optional) Either a boolean, in which case it controls whether we verify
-                           the server's TLS certificate, or a string, in which case it must be a path
-                           to a CA bundle to use
-            cert: (optional) Any user-provided SSL certificate to be trusted.
-            proxies: (optional) The proxies dictionary to apply to the request.
-        """
+        Only takes into account the request URL and timeout, and only handles GET requests.  """
         if request.method.upper() != 'GET':
             raise ValueError('WebdriverAdapter adapter only supports get requests')
 
@@ -164,7 +152,8 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
         response.request = request
         response.url = self.driver.current_url
 
-        # Things we can’t have :( unless we use a proxy which may gets us detected or some logging-like add-on
+        # Things we can’t have :( unless we use a proxy which may gets us detected
+        # or something like an add-on logging the infos that we could communicate with
         response.status_code = None
         response.reason = None
 
@@ -183,7 +172,9 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
 
     @staticmethod
     def to_cookielib_cookie(selenium_cookie):
-        """ https://gist.github.com/tubaman/ab4fdc3e0104a0f54046 """
+        """ Convert a selenium cookie to a http.cookiejar cookie
+
+        From https://gist.github.com/tubaman/ab4fdc3e0104a0f54046 """
         return http.cookiejar.Cookie(
             version=0,
             name=selenium_cookie['name'],
