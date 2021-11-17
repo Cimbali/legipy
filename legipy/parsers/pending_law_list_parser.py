@@ -1,10 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals
-
 import re
-
-from six.moves.urllib.parse import urljoin
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from legipy.common import cleanup_url
 from legipy.common import merge_spaces

@@ -7,18 +7,18 @@ from bs4.element import Tag
 DOMAIN = 'www.legifrance.gouv.fr'
 
 MONTHS = [
-    u'janvier',
-    u'février',
-    u'mars',
-    u'avril',
-    u'mai',
-    u'juin',
-    u'juillet',
-    u'août',
-    u'septembre',
-    u'octobre',
-    u'novembre',
-    u'décembre'
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre'
 ]
 
 LAW_KINDS = [
@@ -38,7 +38,7 @@ ROMAN_VALUES = {
 
 
 def page_url(page):
-    return 'https://%s/%s' % (DOMAIN, page)
+    return f'https://{DOMAIN}/{page}'
 
 
 def cleanup_url(url):
@@ -70,7 +70,7 @@ def parse_roman(string):
 
     for c in string:
         if c not in ROMAN_VALUES:
-            raise ValueError("Not a roman numeral: %s" % string)
+            raise ValueError(f'Not a roman numeral: {string}')
 
     for index in range(len(string)):
         value = ROMAN_VALUES[string[index]]
@@ -82,21 +82,17 @@ def parse_roman(string):
     return total
 
 
-def find_all_non_nested(parent, *args, **kwargs):
+def find_all_non_nested(parent, *args, bfs=False, **kwargs):
     """ find_all for non-nested elements
 
     I.e. the same semantics as find_all(..., recursive=True),
     except we don’t search children of matched nodes
     """
-    # Indulge python 2 ?
-    bfs = kwargs.pop('bfs', False)
-    kwargs['recursive'] = False
-
     search = [parent]
     found = []
     while search:
         node = search.pop(0 if bfs else -1)
-        found_at_node = node.find_all(*args, **kwargs)
+        found_at_node = node.find_all(*args, **kwargs, recursive=False)
         found += found_at_node
         search.extend(child for child in node.children if (
             isinstance(child, Tag) and child not in found_at_node

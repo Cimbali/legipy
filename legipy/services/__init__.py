@@ -7,6 +7,7 @@ import requests_cache
 from bs4 import BeautifulSoup
 from pathlib import Path
 
+
 class Singleton(type):
     _instances = {}
 
@@ -30,10 +31,12 @@ class Service(object):
             path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens'))
             if not path.exists():
                 path.mkdir(parents=True)
-            cache_name = str(path / 'requests_cache.sqlite')
+            cache = str(path / 'requests_cache.sqlite')
         else:
-            cache_name = 'legipy_requests'
-        cls.session = requests_cache.CachedSession(**kwargs, cache_name=cache_name, allowable_codes=(200, None,))
+            cache = 'legipy_requests'
+
+        kwargs.update(dict(cache_name=cache, allowable_codes=(200, None,)))
+        cls.session = requests_cache.CachedSession(**kwargs)
         if adapter:
             cls.set_adapter(adapter)
 
@@ -44,7 +47,8 @@ class Service(object):
     def get(self, url, *args, **kwargs):
         for _ in range(self.retries):
             response = Service.session.get(url, *args, **kwargs)
-            soup = BeautifulSoup(response.content, 'html5lib', from_encoding='utf-8')
+            soup = BeautifulSoup(response.content, 'html5lib',
+                                 from_encoding='utf-8')
             # If error or valid contents, return the resposne
             if response.status_code != 200 or len(soup.body.contents) > 1:
                 return response.url, soup
@@ -55,9 +59,11 @@ class Service(object):
 
             err = 'Request unsuccessful.'
             if len(soup.body.contents) == 1:
-                err = f'{err[:-1]}: "{soup.body.contents[0].string.replace(f"{err} ", "").strip()}"'
+                msg = soup.body.contents[0].string.replace(f"{err} ", "")
+                err = f'{err[:-1]}: "{msg.strip()}"'
             print(err, file=sys.stderr)
-            print(f'Try opening the page and filling any captchas: {url}', file=sys.stderr)
+            print(f'Try opening the page and filling any captchas: {url}',
+                  file=sys.stderr)
             input()
 
         raise ValueError(f'Too many tries for {url}')

@@ -1,15 +1,12 @@
 import datetime
 
-import six
-
 from legipy.common import page_url
 from legipy.parsers.code_parser import CodeParser
 from legipy.parsers.code_parser import parser_articles
 from legipy.services import Singleton, Service
 
 
-@six.add_metaclass(Singleton)
-class CodeService(Service):
+class CodeService(Service, metaclass=Singleton):
     code_list_url = page_url('liste/code')
     code_url = page_url('codes/texte_lc/{id_code}/{date}/')
 
@@ -31,8 +28,7 @@ class CodeService(Service):
         return parser.parse_code(url, soup)
 
 
-@six.add_metaclass(Singleton)
-class SectionService(Service):
+class SectionService(Service, metaclass=Singleton):
     section_url = page_url('codes/section_lc/{id_code}/{id_section}/{date}/')
 
     def articles(self, id_code, id_section, date_pub):

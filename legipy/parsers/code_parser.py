@@ -1,9 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals
-
 import re
-
-from six.moves.urllib.parse import urljoin, urldefrag
+from urllib.parse import urljoin, urldefrag
 
 from legipy.common import find_all_non_nested
 from legipy.common import cleanup_url

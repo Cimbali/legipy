@@ -1,11 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals
-
 import re
-
-from six.moves.urllib.parse import parse_qs
-from six.moves.urllib.parse import urljoin
-from six.moves.urllib.parse import urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 from legipy.common import cleanup_url
 from legipy.common import merge_spaces
@@ -40,7 +35,7 @@ def parse_common_law_list(url, soup):
             common = common_text
         try:
             second = re_find_second.search(common_text)
-            common += " ; %s" % "".join(second.groups())
+            common += f' ; {"".join(second.groups())}'
         except Exception:
             pass
 

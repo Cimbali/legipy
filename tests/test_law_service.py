@@ -10,6 +10,7 @@ from legipy.services.law_service import LawService
 
 recorder = vcr.VCR(cassette_library_dir='tests/fixtures/cassettes')
 
+
 @recorder.use_cassette()
 def test_list_published_laws():
     service = LawService()
@@ -25,7 +26,7 @@ def test_list_published_laws():
     assert laws[0].url_legi == 'https://www.legifrance.gouv.fr/dossierlegislatif/JORFDOLE000024106525/'
     assert laws[0].id_legi == 'JORFDOLE000024106525'
     assert laws[0].pub_date == date(2012, 3, 27)
-    assert laws[0].title == u'LOI n° 2012-410 du 27 mars 2012 relative à la protection de l\'identité'
+    assert laws[0].title == 'LOI n° 2012-410 du 27 mars 2012 relative à la protection de l\'identité'
 
     assert laws[18].kind == 'organique'
 
@@ -46,7 +47,7 @@ def test_published_law():
     assert law.id_senat == 'ppl09-682'
     assert law.id_legi == 'JORFDOLE000024106525'
     assert law.pub_date == date(2012, 3, 27)
-    assert law.title == u'LOI n° 2012-410 du 27 mars 2012 relative à la protection de l\'identité'
+    assert law.title == 'LOI n° 2012-410 du 27 mars 2012 relative à la protection de l\'identité'
 
 
 @recorder.use_cassette()
@@ -61,7 +62,7 @@ def test_list_pending_law_proposals():
     assert laws[0].type == 'prop'
     assert laws[0].url_legi == 'https://www.legifrance.gouv.fr/dossierlegislatif/JORFDOLE000025450258/'
     assert laws[0].id_legi == 'JORFDOLE000025450258'
-    assert laws[0].title == u'Proposition de loi tendant à renforcer l\'effectivité de la peine complémentaire d\'interdiction du territoire français et visant à réprimer les délinquants réitérants'
+    assert laws[0].title == 'Proposition de loi tendant à renforcer l\'effectivité de la peine complémentaire d\'interdiction du territoire français et visant à réprimer les délinquants réitérants'
 
 
 @recorder.use_cassette()
@@ -80,7 +81,7 @@ def test_pending_law_proposal():
     assert law.url_senat == 'http://www.senat.fr/dossier-legislatif/ppl11-466.html'
     assert law.id_senat == 'ppl11-466'
     assert law.pub_date is None
-    assert law.title == u'Proposition de loi tendant à renforcer l\'effectivité de la peine complémentaire d\'interdiction du territoire français et visant à réprimer les délinquants réitérants'
+    assert law.title == 'Proposition de loi tendant à renforcer l\'effectivité de la peine complémentaire d\'interdiction du territoire français et visant à réprimer les délinquants réitérants'
 
 
 @recorder.use_cassette()
@@ -96,7 +97,7 @@ def test_list_pending_law_projects():
     assert laws[0].nor is None
     assert laws[0].url_legi == 'https://www.legifrance.gouv.fr/dossierlegislatif/JORFDOLE000026052216/'
     assert laws[0].id_legi == 'JORFDOLE000026052216'
-    assert laws[0].title == u'Projet de loi ratifiant l’ordonnance n° 2011-1923 du 22 décembre 2011 relative à l\'évolution de la sécurité sociale à Mayotte dans le cadre de la départementalisation'
+    assert laws[0].title == 'Projet de loi ratifiant l’ordonnance n° 2011-1923 du 22 décembre 2011 relative à l\'évolution de la sécurité sociale à Mayotte dans le cadre de la départementalisation'
 
     assert laws[1].nor == 'DEVA1208027L'
 
@@ -117,7 +118,7 @@ def test_pending_law_project():
     assert law.url_senat == 'http://www.senat.fr/dossier-legislatif/pjl11-607.html'
     assert law.id_senat == 'pjl11-607'
     assert law.pub_date is None
-    assert law.title == u'Projet de loi ratifiant l’ordonnance n° 2011-1923 du 22 décembre 2011 relative à l\'évolution de la sécurité sociale à Mayotte dans le cadre de la départementalisation'
+    assert law.title == 'Projet de loi ratifiant l’ordonnance n° 2011-1923 du 22 décembre 2011 relative à l\'évolution de la sécurité sociale à Mayotte dans le cadre de la départementalisation'
 
 
 @pytest.mark.skip(reason='No way of currently obtaining/identifying common laws')
@@ -128,17 +129,16 @@ def test_list_common_law_projects():
 
     assert 139 == len(laws)
 
-    assert laws[0].common_name == u"loi El Khomri"
-    assert laws[0].id_legi == u"JORFTEXT000032983213"
-    assert laws[0].nor == u"ETSX1604461L"
-    assert laws[0].title == u"LOI n\u00b0 2016-1088 du 8 ao\u00fbt 2016 relative au travail, \u00e0 la modernisation du dialogue social et \u00e0 la s\u00e9curisation des parcours professionnels"
-    assert laws[0].url_legi == u"https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032983213/"
+    assert laws[0].common_name == "loi El Khomri"
+    assert laws[0].id_legi == "JORFTEXT000032983213"
+    assert laws[0].nor == "ETSX1604461L"
+    assert laws[0].title == "LOI n\u00b0 2016-1088 du 8 ao\u00fbt 2016 relative au travail, \u00e0 la modernisation du dialogue social et \u00e0 la s\u00e9curisation des parcours professionnels"
+    assert laws[0].url_legi == "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000032983213/"
 
-    assert laws[11].common_name == u"loi ALUR ; loi Duflot"
-    assert laws[14].common_name == u"Transposition de l'accord interprofessionnel (ANI) 2013"
-    assert laws[17].common_name == u"loi DDADUE ; DADUE"
-    assert laws[42].common_name == u"loi TEPA ; paquet fiscal"
+    assert laws[11].common_name == "loi ALUR ; loi Duflot"
+    assert laws[14].common_name == "Transposition de l'accord interprofessionnel (ANI) 2013"
+    assert laws[17].common_name == "loi DDADUE ; DADUE"
+    assert laws[42].common_name == "loi TEPA ; paquet fiscal"
 
-    assert laws[-1].common_name == u"loi Marthe Richard"
-    assert laws[-1].id_legi == u"JPDF1404194600003138"
-
+    assert laws[-1].common_name == "loi Marthe Richard"
+    assert laws[-1].id_legi == "JPDF1404194600003138"

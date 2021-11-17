@@ -1,15 +1,11 @@
 # coding: utf-8
 
-import requests
-import six
-
 from legipy.common import page_url
 from legipy.parsers.legislature_list_parser import parse_legislature_list
 from legipy.services import Singleton, Service
 
 
-@six.add_metaclass(Singleton)
-class LegislatureService(Service):
+class LegislatureService(Service, metaclass=Singleton):
     url = page_url('liste/legislatures')
     cache = None
 

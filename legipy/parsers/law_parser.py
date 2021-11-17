@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals
-
 import re
 
 from legipy.common import LAW_KINDS

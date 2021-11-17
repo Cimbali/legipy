@@ -3,7 +3,6 @@
 import os
 import io
 import sys
-import six
 import json
 import errno
 import signal
@@ -16,8 +15,6 @@ import http.cookiejar
 from collections.abc import Iterable
 from pathlib import Path
 
-from legipy.services import Singleton
-
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
 
@@ -25,12 +22,13 @@ from selenium.webdriver.remote.command import Command
 class RemoteDaemon(webdriver.Remote):
     """ Communicate with a running instance of a browser
 
-    Useful to decrease browser startup & shutdown overheads, to fill in captchas,
-    and to persist sessions. Requires bypassing session start and stop mechanisms
+    Useful to reduce browser startup & shutdown overheads, to fill in captchas,
+    and to persist sessions. Requires bypassing session start and stop
     """
     def __init__(self, session_data, **kwargs):
         self.session_data = session_data
-        super(RemoteDaemon, self).__init__(command_executor=session_data['url'], **kwargs)
+        kwargs['command_executor'] = session_data['url']
+        super(RemoteDaemon, self).__init__(**kwargs)
 
     def start_session(self, *args, **kwargs):
         self.session_id = self.session_data['session_id']
@@ -53,7 +51,8 @@ class Browser(object):
         'chrome': webdriver.chrome.options.Options,
     }
 
-    path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens')) / 'selenium.json'
+    path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens')) \
+        / 'selenium.json'
 
     def __init__(self, driver_name='firefox'):
         session_data = None
@@ -64,7 +63,8 @@ class Browser(object):
         try:
             if session_data:
                 driver = RemoteDaemon(session_data)
-                webdriver.Remote.execute(driver, Command.W3C_GET_CURRENT_WINDOW_HANDLE)
+                webdriver.Remote.execute(driver,
+                                         Command.W3C_GET_CURRENT_WINDOW_HANDLE)
                 self.driver = driver
         except Exception as err:
             print('Failed accessing daemon', err, file=sys.stderr)
@@ -77,15 +77,17 @@ class Browser(object):
             atexit.register(self.driver.quit)
 
     def background(self):
-        """ Background work: save infos for remote to file and wait until clean up """
+        """ Background work: save infos for remote to file, wait & clean up """
         if not self.path.parent.exists():
             self.path.parent.mkdir(parents=True)
 
         with open(self.path, 'w') as f:
             json.dump({
                 'pid': os.getpid(),
-                'url': self.driver.command_executor._url, 'session_id': self.driver.session_id,
-                'capabilities': self.driver.desired_capabilities, 'w3c': self.driver.w3c,
+                'url': self.driver.command_executor._url,
+                'session_id': self.driver.session_id,
+                'capabilities': self.driver.desired_capabilities,
+                'w3c': self.driver.w3c,
             }, f)
 
         exit = threading.Event()
@@ -136,15 +138,17 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
     def close(self):
         pass
 
-    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
+    def send(self, request, timeout=None, **kwargs):
         """ Sends a PreparedRequest via the webdriver. Returns Response object.
 
-        Only takes into account the request URL and timeout, and only handles GET requests.  """
+        Only takes into account the request URL and timeout.
+        Only handles GET requests.  """
         if request.method.upper() != 'GET':
-            raise ValueError('WebdriverAdapter adapter only supports get requests')
+            raise ValueError('WebdriverAdapter only supports get requests')
 
+        if timeout and isinstance(timeout, Iterable):
+            timeout = sum(timeout)
         if timeout:
-            timeout = sum(timeout) if isinstance(timeout, Iterable) else timeout
             self.driver.set_page_load_timeout(timeout)
 
         self.driver.get(request.url)
@@ -152,8 +156,7 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
         response.request = request
         response.url = self.driver.current_url
 
-        # Things we can’t have :( unless we use a proxy which may gets us detected
-        # or something like an add-on logging the infos that we could communicate with
+        # Things we can’t have :(
         response.status_code = None
         response.reason = None
 
@@ -165,10 +168,10 @@ class WebdriverAdapter(requests.adapters.BaseAdapter):
 
         # Set data with default encoding as 'raw'
         response.encoding = 'utf-8'
-        response.raw = io.BytesIO(self.driver.page_source.encode(response.encoding))
+        page_bytes = self.driver.page_source.encode(response.encoding)
+        response.raw = io.BytesIO(page_bytes)
 
         return response
-
 
     @staticmethod
     def to_cookielib_cookie(selenium_cookie):

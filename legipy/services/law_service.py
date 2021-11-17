@@ -1,7 +1,4 @@
 # coding: utf-8
-
-import six
-
 from legipy.common import page_url
 from legipy.parsers.law_parser import parse_law
 from legipy.parsers.pending_law_list_parser import parse_pending_law_list
@@ -9,8 +6,7 @@ from legipy.parsers.published_law_list_parser import parse_published_law_list
 from legipy.services import Singleton, Service
 
 
-@six.add_metaclass(Singleton)
-class LawService(Service):
+class LawService(Service, metaclass=Singleton):
     pub_url = page_url('liste/dossierslegislatifs/{legislature}/')
     law_url = page_url('dossierlegislatif/{id_legi}/')
     comm_url = None
