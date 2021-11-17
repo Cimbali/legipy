@@ -44,7 +44,28 @@ def _dump_items(ary):
     )
 
 
-@click.group(short_help="Client for the `legifrance.gouv.fr` website.")
+class Group(click.Group):
+    """ A group to improve the presentation of subcommands """
+    def format_commands(self, ctx, formatter):
+        limit = formatter.width - 6 - max(map(len, self.list_commands(ctx)))
+
+        scraping_commands = [
+            (cmd, self.get_command(ctx, cmd).get_short_help_str(limit))
+            for cmd in self.list_commands(ctx) if 'daemon' not in cmd
+        ]
+        daemon_commands = [
+            (cmd, self.get_command(ctx, cmd).get_short_help_str(limit))
+            for cmd in self.list_commands(ctx) if 'daemon' in cmd
+        ]
+
+        with formatter.section('Commands'):
+            formatter.write_dl(scraping_commands)
+
+        with formatter.section('Background process control'):
+            formatter.write_dl(daemon_commands)
+
+
+@click.group(short_help='Client for the legifrance.gouv.fr website', cls=Group)
 @click.option('-c/-C', '--cache/--no-cache', default=True,
               help='Cache requests locally')
 @click.option('-w/-W', '--webdriver/--no-webdriver',
