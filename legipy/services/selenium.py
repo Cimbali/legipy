@@ -41,15 +41,10 @@ class RemoteDaemon(webdriver.Remote):
 
 class Browser(object):
     """ Class wrapping and handling the lifetime of a WebDriver """
-    browser_map = {
-        'firefox': webdriver.Firefox,
-        'chrome': webdriver.Chrome,
-    }
-
-    options_map = {
-        'firefox': webdriver.firefox.options.Options,
-        'chrome': webdriver.chrome.options.Options,
-    }
+    browser_map = {driver.lower(): getattr(webdriver, driver) for driver in [
+        'Chrome', 'Edge', 'Firefox', 'Ie', 'Opera', 'Safari', 'WebKitGTK',
+        'Android', 'BlackBerry', 'PhantomJS',
+    ]}
 
     path = Path(appdirs.user_cache_dir('legipy', 'regardscitoyens')) \
         / 'selenium.json'

@@ -50,8 +50,9 @@ def _dump_items(ary):
 @click.option('-w/-W', '--webdriver/--no-webdriver',
               default=Browser.check_running(),
               help='Use selenium webdriver')
-@click.option('--driver', default='firefox',
-              help='Browser to control with webdriver (firefox or chrome')
+@click.option('--driver', default='firefox', metavar='browser',
+              help='Browser to control with webdriver',
+              type=click.Choice([*Browser.browser_map], case_sensitive=False))
 @click.help_option('-h')
 @click.pass_context
 def cli(context, cache, webdriver, driver):
